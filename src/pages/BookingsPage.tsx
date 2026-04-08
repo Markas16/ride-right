@@ -1,16 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserBookings, updateBookingStatus } from "@/dal/bookingDAL";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getVehicleImage } from "@/services/vehicleImages";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { PageTransition, StaggerContainer, StaggerItem } from "@/components/animations/PageTransition";
+import { SkeletonRow } from "@/components/ui/skeleton-cards";
+import { motion } from "framer-motion";
+import { Calendar, X } from "lucide-react";
 
-const statusColors: Record<string, string> = {
-  pending: "bg-warning/10 text-warning",
-  confirmed: "bg-primary/10 text-primary",
-  completed: "bg-success/10 text-success",
-  cancelled: "bg-destructive/10 text-destructive",
+const statusStyles: Record<string, string> = {
+  pending: "gradient-primary-soft text-primary border border-primary/20",
+  confirmed: "bg-primary/10 text-primary border border-primary/20",
+  completed: "bg-success/10 text-success border border-success/20",
+  cancelled: "bg-destructive/10 text-destructive border border-destructive/20",
 };
 
 export default function BookingsPage() {
@@ -33,72 +37,88 @@ export default function BookingsPage() {
   });
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-heading font-bold">My Bookings</h1>
-        <p className="text-muted-foreground">View and manage your rental bookings</p>
-      </div>
+    <PageTransition>
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-heading font-bold">
+            My <span className="gradient-text">Bookings</span>
+          </h1>
+          <p className="text-muted-foreground mt-1">View and manage your rental history</p>
+        </div>
 
-      {isLoading ? (
-        <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6 h-24" />
-            </Card>
-          ))}
-        </div>
-      ) : bookings.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center text-muted-foreground">
-            No bookings yet. Browse vehicles to make your first rental!
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {bookings.map((booking) => (
-            <Card key={booking.id}>
-              <CardContent className="p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-heading font-bold">
-                        {booking.vehicles.make} {booking.vehicles.model}
-                      </h3>
-                      <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${statusColors[booking.status]}`}>
-                        {booking.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(booking.start_time).toLocaleString()} → {new Date(booking.end_time).toLocaleString()}
-                    </p>
-                    <div className="flex gap-4 mt-2 text-sm">
-                      <span>Total: <strong>₹{booking.total_cost.toFixed(2)}</strong></span>
-                      {booking.payments && (
-                        <span>
-                          Payment:{" "}
-                          <span className={booking.payments.status === "completed" ? "text-success" : "text-warning"}>
-                            {booking.payments.status}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {(booking.status === "pending" || booking.status === "confirmed") && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => cancelMutation.mutate(booking.id)}
-                      disabled={cancelMutation.isPending}
-                    >
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => <SkeletonRow key={i} />)}
+          </div>
+        ) : bookings.length === 0 ? (
+          <Card className="glass-card rounded-2xl border-border/30">
+            <CardContent className="p-16 text-center">
+              <Calendar className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg">No bookings yet.</p>
+              <p className="text-muted-foreground/60 text-sm mt-1">Browse vehicles to make your first rental!</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <StaggerContainer className="space-y-4">
+            {bookings.map((booking) => (
+              <StaggerItem key={booking.id}>
+                <motion.div whileHover={{ x: 4 }} transition={{ duration: 0.2 }}>
+                  <Card className="glass-card rounded-2xl border-border/30 hover:neon-border transition-all duration-300">
+                    <CardContent className="p-5">
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 hidden sm:block">
+                          <img
+                            src={getVehicleImage(booking.vehicles.type)}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h3 className="font-heading font-bold text-lg">
+                                {booking.vehicles.make} {booking.vehicles.model}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(booking.start_time).toLocaleString()} → {new Date(booking.end_time).toLocaleString()}
+                              </p>
+                            </div>
+                            <span className={`px-3 py-1 text-xs rounded-full font-semibold ${statusStyles[booking.status]}`}>
+                              {booking.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-3">
+                            <div className="flex gap-4 text-sm">
+                              <span>Total: <strong className="gradient-text">₹{booking.total_cost.toFixed(2)}</strong></span>
+                              {booking.payments && (
+                                <span className={`font-medium ${booking.payments.status === "completed" ? "text-success" : "text-warning"}`}>
+                                  Payment: {booking.payments.status}
+                                </span>
+                              )}
+                            </div>
+                            {(booking.status === "pending" || booking.status === "confirmed") && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => cancelMutation.mutate(booking.id)}
+                                disabled={cancelMutation.isPending}
+                                className="rounded-xl gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                              >
+                                <X className="h-3.5 w-3.5" /> Cancel
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
+        )}
+      </div>
+    </PageTransition>
   );
 }
