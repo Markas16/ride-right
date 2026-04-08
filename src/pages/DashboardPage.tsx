@@ -3,18 +3,46 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getUserBookings } from "@/dal/bookingDAL";
 import { getVehicles } from "@/dal/vehicleDAL";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Car, Calendar, CreditCard, TrendingUp } from "lucide-react";
+import { Car, Calendar, CreditCard, TrendingUp, ArrowUpRight, Sparkles } from "lucide-react";
+import { useCountUp } from "@/hooks/useCountUp";
+import { PageTransition, StaggerContainer, StaggerItem } from "@/components/animations/PageTransition";
+import { SkeletonStat } from "@/components/ui/skeleton-cards";
+import { motion } from "framer-motion";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+
+function AnimatedStat({ label, value, icon: Icon, color, suffix = "" }: {
+  label: string; value: number; icon: any; color: string; suffix?: string;
+}) {
+  const animatedValue = useCountUp(value);
+  return (
+    <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
+      <Card className="glass-card hover:glow-sm transition-all duration-300 border-border/40">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <p className="text-sm font-medium text-muted-foreground">{label}</p>
+            <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${color}`}>
+              <Icon className="h-5 w-5" />
+            </div>
+          </div>
+          <p className="text-3xl font-heading font-bold">
+            {suffix === "₹" && "₹"}{animatedValue}{suffix !== "₹" && suffix}
+          </p>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
-  const { data: bookings = [] } = useQuery({
+  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
     queryKey: ["user-bookings", user?.id],
     queryFn: () => getUserBookings(user!.id),
     enabled: !!user,
   });
 
-  const { data: vehicles = [] } = useQuery({
+  const { data: vehicles = [], isLoading: vehiclesLoading } = useQuery({
     queryKey: ["vehicles"],
     queryFn: () => getVehicles(),
   });
@@ -25,60 +53,167 @@ export default function DashboardPage() {
     .reduce((sum, b) => sum + (b.payments?.amount ?? 0), 0);
   const availableVehicles = vehicles.filter((v) => v.status === "available").length;
 
-  const stats = [
-    { label: "Active Bookings", value: activeBookings.length, icon: Calendar, color: "text-primary" },
-    { label: "Total Bookings", value: bookings.length, icon: TrendingUp, color: "text-primary" },
-    { label: "Available Vehicles", value: availableVehicles, icon: Car, color: "text-primary" },
-    { label: "Total Spent", value: `₹${totalSpent.toFixed(2)}`, icon: CreditCard, color: "text-primary" },
-  ];
+  const isLoading = bookingsLoading || vehiclesLoading;
+
+  // Generate chart data from bookings
+  const monthlyData = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - (5 - i));
+    const monthBookings = bookings.filter((b) => {
+      const bd = new Date(b.created_at);
+      return bd.getMonth() === d.getMonth() && bd.getFullYear() === d.getFullYear();
+    });
+    return {
+      month: d.toLocaleString("default", { month: "short" }),
+      bookings: monthBookings.length,
+      revenue: monthBookings.reduce((sum, b) => sum + b.total_cost, 0),
+    };
+  });
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back! Here's your rental overview.</p>
-      </div>
+    <PageTransition>
+      <div className="space-y-8">
+        {/* Welcome banner */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="relative overflow-hidden rounded-2xl gradient-primary p-8 lg:p-10"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_80%,rgba(120,80,255,0.2),transparent_50%)]" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="h-5 w-5 text-primary-foreground/80" />
+              <span className="text-sm text-primary-foreground/70 font-medium">Welcome back</span>
+            </div>
+            <h1 className="text-3xl lg:text-4xl font-heading font-bold text-primary-foreground mb-2">
+              Hello, {profile?.full_name || "there"}! 👋
+            </h1>
+            <p className="text-primary-foreground/70 text-lg max-w-xl">
+              Ready for your next ride? Browse our premium fleet and book your perfect vehicle today.
+            </p>
+          </div>
+        </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+        {/* Stats grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => <SkeletonStat key={i} />)}
+          </div>
+        ) : (
+          <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StaggerItem>
+              <AnimatedStat label="Active Bookings" value={activeBookings.length} icon={Calendar} color="gradient-primary-soft text-primary" />
+            </StaggerItem>
+            <StaggerItem>
+              <AnimatedStat label="Total Bookings" value={bookings.length} icon={TrendingUp} color="gradient-primary-soft text-primary" />
+            </StaggerItem>
+            <StaggerItem>
+              <AnimatedStat label="Available Vehicles" value={availableVehicles} icon={Car} color="gradient-primary-soft text-primary" />
+            </StaggerItem>
+            <StaggerItem>
+              <AnimatedStat label="Total Spent" value={Math.round(totalSpent)} icon={CreditCard} color="gradient-primary-soft text-primary" suffix="₹" />
+            </StaggerItem>
+          </StaggerContainer>
+        )}
+
+        {/* Charts row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="glass-card border-border/40">
+            <CardHeader>
+              <CardTitle className="font-heading text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Booking Activity
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-heading font-bold">{stat.value}</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(225, 15%, 90%)" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(225, 12%, 50%)" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="hsl(225, 12%, 50%)" />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(255,255,255,0.9)",
+                      backdropFilter: "blur(8px)",
+                      border: "1px solid hsl(225, 15%, 90%)",
+                      borderRadius: "12px",
+                      fontSize: "13px",
+                    }}
+                  />
+                  <Bar dataKey="bookings" fill="hsl(230, 80%, 60%)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {activeBookings.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-heading">Active Bookings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {activeBookings.slice(0, 5).map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div>
-                    <p className="font-medium">
-                      {booking.vehicles.make} {booking.vehicles.model}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(booking.start_time).toLocaleDateString()} → {new Date(booking.end_time).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <span className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary font-medium capitalize">
-                    {booking.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          <Card className="glass-card border-border/40">
+            <CardHeader>
+              <CardTitle className="font-heading text-lg flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-accent" />
+                Revenue Trend
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={monthlyData}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(270, 70%, 58%)" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(270, 70%, 58%)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(225, 15%, 90%)" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(225, 12%, 50%)" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="hsl(225, 12%, 50%)" />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(255,255,255,0.9)",
+                      backdropFilter: "blur(8px)",
+                      border: "1px solid hsl(225, 15%, 90%)",
+                      borderRadius: "12px",
+                      fontSize: "13px",
+                    }}
+                    formatter={(value: number) => [`₹${value}`, "Revenue"]}
+                  />
+                  <Area type="monotone" dataKey="revenue" stroke="hsl(270, 70%, 58%)" fill="url(#revenueGradient)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Active bookings */}
+        {activeBookings.length > 0 && (
+          <Card className="glass-card border-border/40">
+            <CardHeader>
+              <CardTitle className="font-heading text-lg">Active Bookings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <StaggerContainer className="space-y-3">
+                {activeBookings.slice(0, 5).map((booking) => (
+                  <StaggerItem key={booking.id}>
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border/30 hover-lift">
+                      <div>
+                        <p className="font-semibold">
+                          {booking.vehicles.make} {booking.vehicles.model}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(booking.start_time).toLocaleDateString()} → {new Date(booking.end_time).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span className="px-3 py-1 text-xs rounded-full font-semibold gradient-primary text-primary-foreground">
+                        {booking.status}
+                      </span>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </StaggerContainer>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </PageTransition>
   );
 }
