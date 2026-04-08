@@ -97,8 +97,8 @@ export default function VehiclesPage() {
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{vehicle.description}</p>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-lg font-bold text-primary">${vehicle.price_per_hour}/hr</p>
-                    <p className="text-xs text-muted-foreground">${vehicle.price_per_day}/day</p>
+                    <p className="text-lg font-bold text-primary">₹{vehicle.price_per_hour}/hr</p>
+                    <p className="text-xs text-muted-foreground">₹{vehicle.price_per_day}/day</p>
                   </div>
                   <Button
                     size="sm"

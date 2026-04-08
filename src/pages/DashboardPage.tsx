@@ -29,7 +29,7 @@ export default function DashboardPage() {
     { label: "Active Bookings", value: activeBookings.length, icon: Calendar, color: "text-primary" },
     { label: "Total Bookings", value: bookings.length, icon: TrendingUp, color: "text-primary" },
     { label: "Available Vehicles", value: availableVehicles, icon: Car, color: "text-primary" },
-    { label: "Total Spent", value: `$${totalSpent.toFixed(2)}`, icon: CreditCard, color: "text-primary" },
+    { label: "Total Spent", value: `₹${totalSpent.toFixed(2)}`, icon: CreditCard, color: "text-primary" },
   ];
 
   return (

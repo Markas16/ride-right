@@ -72,7 +72,7 @@ export default function BookingsPage() {
                       {new Date(booking.start_time).toLocaleString()} → {new Date(booking.end_time).toLocaleString()}
                     </p>
                     <div className="flex gap-4 mt-2 text-sm">
-                      <span>Total: <strong>${booking.total_cost.toFixed(2)}</strong></span>
+                      <span>Total: <strong>₹{booking.total_cost.toFixed(2)}</strong></span>
                       {booking.payments && (
                         <span>
                           Payment:{" "}

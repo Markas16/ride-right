@@ -32,7 +32,7 @@ export default function AdminBookingsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-bold">${b.total_cost.toFixed(2)}</span>
+                  <span className="font-bold">₹{b.total_cost.toFixed(2)}</span>
                   <Badge variant={b.status === "confirmed" ? "default" : "secondary"}>{b.status}</Badge>
                 </div>
               </CardContent>

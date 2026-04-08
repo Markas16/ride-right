@@ -107,7 +107,7 @@ export default function BookingPage() {
             <p className="text-muted-foreground">
               Your {vehicle.make} {vehicle.model} has been booked successfully.
             </p>
-            <p className="text-lg font-bold text-primary">${bookingResult.amount.toFixed(2)} paid</p>
+            <p className="text-lg font-bold text-primary">₹{bookingResult.amount.toFixed(2)} paid</p>
             <Button onClick={() => navigate("/bookings")}>View My Bookings</Button>
           </CardContent>
         </Card>
@@ -121,7 +121,7 @@ export default function BookingPage() {
                 <h2 className="text-xl font-heading font-bold">
                   {vehicle.make} {vehicle.model}
                 </h2>
-                <p className="text-muted-foreground">{vehicle.year} · ${vehicle.price_per_hour}/hr · ${vehicle.price_per_day}/day</p>
+                <p className="text-muted-foreground">{vehicle.year} · ₹{vehicle.price_per_hour}/hr · ₹{vehicle.price_per_day}/day</p>
               </div>
             </CardContent>
           </Card>
@@ -151,7 +151,7 @@ export default function BookingPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">Total Cost</span>
-                    <span className="text-xl font-heading font-bold text-primary">${pricing.cost.toFixed(2)}</span>
+                    <span className="text-xl font-heading font-bold text-primary">₹{pricing.cost.toFixed(2)}</span>
                   </div>
                 </div>
               )}
@@ -174,7 +174,7 @@ export default function BookingPage() {
                   <p className="font-medium">💳 **** **** **** 4242</p>
                 </div>
                 <Button className="w-full" size="lg" onClick={() => bookMutation.mutate()} disabled={bookMutation.isPending}>
-                  {bookMutation.isPending ? "Processing..." : `Pay $${pricing.cost.toFixed(2)} & Confirm`}
+                  {bookMutation.isPending ? "Processing..." : `Pay ₹${pricing.cost.toFixed(2)} & Confirm`}
                 </Button>
               </CardContent>
             </Card>
