@@ -140,11 +140,11 @@ export default function AdminVehiclesPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Price/Hour ($)</Label>
+                   <Label>Price/Hour (₹)</Label>
                   <Input type="number" step="0.01" value={form.price_per_hour} onChange={(e) => setForm({ ...form, price_per_hour: parseFloat(e.target.value) })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Price/Day ($)</Label>
+                   <Label>Price/Day (₹)</Label>
                   <Input type="number" step="0.01" value={form.price_per_day} onChange={(e) => setForm({ ...form, price_per_day: parseFloat(e.target.value) })} />
                 </div>
               </div>
@@ -170,7 +170,7 @@ export default function AdminVehiclesPage() {
                 <span className="text-2xl">{getVehicleIcon(v.type)}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-heading font-bold">{v.make} {v.model} ({v.year})</p>
-                  <p className="text-sm text-muted-foreground">${v.price_per_hour}/hr · ${v.price_per_day}/day</p>
+                  <p className="text-sm text-muted-foreground">₹{v.price_per_hour}/hr · ₹{v.price_per_day}/day</p>
                 </div>
                 <Badge variant={v.status === "available" ? "default" : "secondary"}
                   className={v.status === "available" ? "bg-success text-success-foreground" : v.status === "maintenance" ? "bg-warning text-warning-foreground" : ""}>
