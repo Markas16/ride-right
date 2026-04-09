@@ -1,5 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
-import { getAllBookings } from "@/dal/bookingDAL";
+import { useAllBookings } from "@/controllers/useBookingController";
 import { getVehicleImage } from "@/services/vehicleImages";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/animations/PageTransition";
@@ -14,10 +13,7 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function AdminBookingsPage() {
-  const { data: bookings = [], isLoading } = useQuery({
-    queryKey: ["all-bookings"],
-    queryFn: getAllBookings,
-  });
+  const { data: bookings = [], isLoading } = useAllBookings();
 
   return (
     <PageTransition>
@@ -43,15 +39,13 @@ export default function AdminBookingsPage() {
                   <Card className="glass-card rounded-2xl border-border/30 hover:neon-border transition-all duration-300">
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
-                        <img src={getVehicleImage(b.vehicles.type)} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        {b.vehicle && <img src={getVehicleImage(b.vehicle.type)} alt="" className="w-full h-full object-cover" loading="lazy" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-heading font-bold">{b.vehicles.make} {b.vehicles.model}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(b.start_time).toLocaleString()} → {new Date(b.end_time).toLocaleString()}
-                        </p>
+                        <p className="font-heading font-bold">{b.vehicle?.displayName ?? "Unknown"}</p>
+                        <p className="text-sm text-muted-foreground">{b.formattedDateRange}</p>
                       </div>
-                      <span className="font-heading font-bold gradient-text">₹{b.total_cost.toFixed(2)}</span>
+                      <span className="font-heading font-bold gradient-text">{b.formattedCost}</span>
                       <span className={`px-3 py-1 text-xs rounded-full font-semibold ${statusStyles[b.status]}`}>
                         {b.status}
                       </span>
