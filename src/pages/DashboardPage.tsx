@@ -1,9 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserBookings } from "@/dal/bookingDAL";
-import { getVehicles } from "@/dal/vehicleDAL";
+import { useUserBookings } from "@/controllers/useBookingController";
+import { useVehicles } from "@/controllers/useVehicleController";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Car, Calendar, CreditCard, TrendingUp, ArrowUpRight, Sparkles } from "lucide-react";
+import { Car, Calendar, CreditCard, TrendingUp, Sparkles } from "lucide-react";
 import { useCountUp } from "@/hooks/useCountUp";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/animations/PageTransition";
 import { SkeletonStat } from "@/components/ui/skeleton-cards";
@@ -36,44 +35,34 @@ function AnimatedStat({ label, value, icon: Icon, color, suffix = "" }: {
 export default function DashboardPage() {
   const { user, profile } = useAuth();
 
-  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
-    queryKey: ["user-bookings", user?.id],
-    queryFn: () => getUserBookings(user!.id),
-    enabled: !!user,
-  });
+  const { data: bookings = [], isLoading: bookingsLoading } = useUserBookings(user?.id);
+  const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
 
-  const { data: vehicles = [], isLoading: vehiclesLoading } = useQuery({
-    queryKey: ["vehicles"],
-    queryFn: () => getVehicles(),
-  });
-
-  const activeBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "pending");
+  const activeBookings = bookings.filter((b) => b.isActive());
   const totalSpent = bookings
-    .filter((b) => b.payments?.status === "completed")
-    .reduce((sum, b) => sum + (b.payments?.amount ?? 0), 0);
-  const availableVehicles = vehicles.filter((v) => v.status === "available").length;
+    .filter((b) => b.payment?.isCompleted())
+    .reduce((sum, b) => sum + (b.payment?.amount ?? 0), 0);
+  const availableVehicles = vehicles.filter((v) => v.isAvailable()).length;
 
   const isLoading = bookingsLoading || vehiclesLoading;
 
-  // Generate chart data from bookings
   const monthlyData = Array.from({ length: 6 }, (_, i) => {
     const d = new Date();
     d.setMonth(d.getMonth() - (5 - i));
     const monthBookings = bookings.filter((b) => {
-      const bd = new Date(b.created_at);
+      const bd = new Date(b.createdAt);
       return bd.getMonth() === d.getMonth() && bd.getFullYear() === d.getFullYear();
     });
     return {
       month: d.toLocaleString("default", { month: "short" }),
       bookings: monthBookings.length,
-      revenue: monthBookings.reduce((sum, b) => sum + b.total_cost, 0),
+      revenue: monthBookings.reduce((sum, b) => sum + b.totalCost, 0),
     };
   });
 
   return (
     <PageTransition>
       <div className="space-y-8">
-        {/* Welcome banner */}
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -96,7 +85,6 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Stats grid */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => <SkeletonStat key={i} />)}
@@ -118,7 +106,6 @@ export default function DashboardPage() {
           </StaggerContainer>
         )}
 
-        {/* Charts row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="glass-card border-border/40">
             <CardHeader>
@@ -133,15 +120,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(225, 15%, 90%)" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(225, 12%, 50%)" />
                   <YAxis tick={{ fontSize: 12 }} stroke="hsl(225, 12%, 50%)" />
-                  <Tooltip
-                    contentStyle={{
-                      background: "rgba(255,255,255,0.9)",
-                      backdropFilter: "blur(8px)",
-                      border: "1px solid hsl(225, 15%, 90%)",
-                      borderRadius: "12px",
-                      fontSize: "13px",
-                    }}
-                  />
+                  <Tooltip contentStyle={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", border: "1px solid hsl(225, 15%, 90%)", borderRadius: "12px", fontSize: "13px" }} />
                   <Bar dataKey="bookings" fill="hsl(230, 80%, 60%)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -167,16 +146,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(225, 15%, 90%)" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(225, 12%, 50%)" />
                   <YAxis tick={{ fontSize: 12 }} stroke="hsl(225, 12%, 50%)" />
-                  <Tooltip
-                    contentStyle={{
-                      background: "rgba(255,255,255,0.9)",
-                      backdropFilter: "blur(8px)",
-                      border: "1px solid hsl(225, 15%, 90%)",
-                      borderRadius: "12px",
-                      fontSize: "13px",
-                    }}
-                    formatter={(value: number) => [`₹${value}`, "Revenue"]}
-                  />
+                  <Tooltip contentStyle={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", border: "1px solid hsl(225, 15%, 90%)", borderRadius: "12px", fontSize: "13px" }} formatter={(value: number) => [`₹${value}`, "Revenue"]} />
                   <Area type="monotone" dataKey="revenue" stroke="hsl(270, 70%, 58%)" fill="url(#revenueGradient)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
@@ -184,7 +154,6 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Active bookings */}
         {activeBookings.length > 0 && (
           <Card className="glass-card border-border/40">
             <CardHeader>
@@ -196,11 +165,9 @@ export default function DashboardPage() {
                   <StaggerItem key={booking.id}>
                     <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border/30 hover-lift">
                       <div>
-                        <p className="font-semibold">
-                          {booking.vehicles.make} {booking.vehicles.model}
-                        </p>
+                        <p className="font-semibold">{booking.vehicle?.displayName ?? "Unknown"}</p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(booking.start_time).toLocaleDateString()} → {new Date(booking.end_time).toLocaleDateString()}
+                          {new Date(booking.startTime).toLocaleDateString()} → {new Date(booking.endTime).toLocaleDateString()}
                         </p>
                       </div>
                       <span className="px-3 py-1 text-xs rounded-full font-semibold gradient-primary text-primary-foreground">

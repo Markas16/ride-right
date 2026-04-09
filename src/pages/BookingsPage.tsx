@@ -1,10 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserBookings, updateBookingStatus } from "@/dal/bookingDAL";
+import { useUserBookings, useCancelBooking } from "@/controllers/useBookingController";
 import { getVehicleImage } from "@/services/vehicleImages";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/animations/PageTransition";
 import { SkeletonRow } from "@/components/ui/skeleton-cards";
 import { motion } from "framer-motion";
@@ -19,22 +17,8 @@ const statusStyles: Record<string, string> = {
 
 export default function BookingsPage() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-  const { data: bookings = [], isLoading } = useQuery({
-    queryKey: ["user-bookings", user?.id],
-    queryFn: () => getUserBookings(user!.id),
-    enabled: !!user,
-  });
-
-  const cancelMutation = useMutation({
-    mutationFn: (bookingId: string) => updateBookingStatus(bookingId, "cancelled"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-bookings"] });
-      toast.success("Booking cancelled.");
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
+  const { data: bookings = [], isLoading } = useUserBookings(user?.id);
+  const cancelMutation = useCancelBooking();
 
   return (
     <PageTransition>
@@ -47,9 +31,7 @@ export default function BookingsPage() {
         </div>
 
         {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => <SkeletonRow key={i} />)}
-          </div>
+          <div className="space-y-4">{[1, 2, 3].map((i) => <SkeletonRow key={i} />)}</div>
         ) : bookings.length === 0 ? (
           <Card className="glass-card rounded-2xl border-border/30">
             <CardContent className="p-16 text-center">
@@ -67,22 +49,15 @@ export default function BookingsPage() {
                     <CardContent className="p-5">
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 hidden sm:block">
-                          <img
-                            src={getVehicleImage(booking.vehicles.type)}
-                            alt=""
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
+                          {booking.vehicle && (
+                            <img src={getVehicleImage(booking.vehicle.type)} alt="" className="w-full h-full object-cover" loading="lazy" />
+                          )}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <h3 className="font-heading font-bold text-lg">
-                                {booking.vehicles.make} {booking.vehicles.model}
-                              </h3>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(booking.start_time).toLocaleString()} → {new Date(booking.end_time).toLocaleString()}
-                              </p>
+                              <h3 className="font-heading font-bold text-lg">{booking.vehicle?.displayName ?? "Unknown"}</h3>
+                              <p className="text-sm text-muted-foreground">{booking.formattedDateRange}</p>
                             </div>
                             <span className={`px-3 py-1 text-xs rounded-full font-semibold ${statusStyles[booking.status]}`}>
                               {booking.status}
@@ -90,14 +65,14 @@ export default function BookingsPage() {
                           </div>
                           <div className="flex items-center justify-between mt-3">
                             <div className="flex gap-4 text-sm">
-                              <span>Total: <strong className="gradient-text">₹{booking.total_cost.toFixed(2)}</strong></span>
-                              {booking.payments && (
-                                <span className={`font-medium ${booking.payments.status === "completed" ? "text-success" : "text-warning"}`}>
-                                  Payment: {booking.payments.status}
+                              <span>Total: <strong className="gradient-text">{booking.formattedCost}</strong></span>
+                              {booking.payment && (
+                                <span className={`font-medium ${booking.payment.isCompleted() ? "text-success" : "text-warning"}`}>
+                                  Payment: {booking.payment.status}
                                 </span>
                               )}
                             </div>
-                            {(booking.status === "pending" || booking.status === "confirmed") && (
+                            {booking.isCancellable() && (
                               <Button
                                 variant="outline"
                                 size="sm"

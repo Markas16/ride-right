@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { getVehicles } from "@/dal/vehicleDAL";
+import { useVehicles } from "@/controllers/useVehicleController";
 import { getVehicleLabel } from "@/services/vehicleFactory";
 import { getVehicleImage } from "@/services/vehicleImages";
 import { Button } from "@/components/ui/button";
@@ -19,19 +18,14 @@ export default function VehiclesPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data: vehicles = [], isLoading } = useQuery({
-    queryKey: ["vehicles", typeFilter, statusFilter],
-    queryFn: () =>
-      getVehicles({
-        type: typeFilter === "all" ? undefined : typeFilter,
-        status: statusFilter === "all" ? undefined : statusFilter,
-      }),
+  const { data: vehicles = [], isLoading } = useVehicles({
+    type: typeFilter === "all" ? undefined : typeFilter,
+    status: statusFilter === "all" ? undefined : statusFilter,
   });
 
   return (
     <PageTransition>
       <div className="space-y-8">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-heading font-bold">
@@ -66,7 +60,6 @@ export default function VehiclesPage() {
           </div>
         </div>
 
-        {/* Vehicle grid */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
@@ -87,18 +80,17 @@ export default function VehiclesPage() {
                     className="group"
                   >
                     <div className="glass-card rounded-2xl overflow-hidden border-border/30 hover:glow transition-all duration-300">
-                      {/* Image */}
                       <div className="relative h-44 overflow-hidden">
                         <img
                           src={getVehicleImage(vehicle.type)}
-                          alt={`${vehicle.make} ${vehicle.model}`}
+                          alt={vehicle.displayName}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           loading="lazy"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
                         <Badge
                           className={`absolute top-3 right-3 rounded-full px-3 py-1 text-xs font-semibold ${
-                            vehicle.status === "available"
+                            vehicle.isAvailable()
                               ? "bg-success/90 text-success-foreground backdrop-blur-sm"
                               : "bg-muted/90 text-muted-foreground backdrop-blur-sm"
                           }`}
@@ -115,11 +107,8 @@ export default function VehiclesPage() {
                         </div>
                       </div>
 
-                      {/* Content */}
                       <div className="p-5">
-                        <h3 className="font-heading font-bold text-lg mb-1">
-                          {vehicle.make} {vehicle.model}
-                        </h3>
+                        <h3 className="font-heading font-bold text-lg mb-1">{vehicle.displayName}</h3>
                         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{vehicle.description}</p>
 
                         <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
@@ -129,12 +118,12 @@ export default function VehiclesPage() {
 
                         <div className="flex items-center justify-between pt-3 border-t border-border/30">
                           <div>
-                            <p className="text-xl font-heading font-bold gradient-text">₹{vehicle.price_per_hour}<span className="text-sm font-normal text-muted-foreground">/hr</span></p>
-                            <p className="text-xs text-muted-foreground">₹{vehicle.price_per_day}/day</p>
+                            <p className="text-xl font-heading font-bold gradient-text">₹{vehicle.pricePerHour}<span className="text-sm font-normal text-muted-foreground">/hr</span></p>
+                            <p className="text-xs text-muted-foreground">₹{vehicle.pricePerDay}/day</p>
                           </div>
                           <Button
                             size="sm"
-                            disabled={vehicle.status !== "available"}
+                            disabled={!vehicle.isAvailable()}
                             onClick={() => navigate(`/book/${vehicle.id}`)}
                             className="rounded-xl gradient-primary text-primary-foreground hover:opacity-90 transition-all group/btn gap-1"
                           >
