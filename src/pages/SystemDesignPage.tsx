@@ -1,7 +1,7 @@
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/animations/PageTransition";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Box, GitBranch, Users, ArrowRightLeft } from "lucide-react";
+import { Box, GitBranch, Users, ArrowRightLeft, Activity } from "lucide-react";
 import MermaidDiagram from "@/components/diagrams/MermaidDiagram";
 
 const classDiagram = `classDiagram
@@ -183,6 +183,31 @@ const sequenceDiagram = `sequenceDiagram
     Ctrl-->>U: Booking confirmed
 `;
 
+const activityDiagram = `stateDiagram-v2
+    [*] --> Pending : Customer submits booking
+    Pending --> Confirmed : Admin confirms / Auto-confirm
+    Pending --> Cancelled : Customer cancels
+    Confirmed --> Completed : Rental period ends
+    Confirmed --> Cancelled : Customer or Admin cancels
+    Completed --> [*]
+    Cancelled --> [*]
+
+    state Pending {
+        [*] --> ValidatingDates
+        ValidatingDates --> CheckingOverlap
+        CheckingOverlap --> CalculatingPrice : No conflicts
+        CheckingOverlap --> Rejected : Overlap found
+        CalculatingPrice --> CreatingPayment
+        CreatingPayment --> AwaitingConfirmation
+    }
+
+    state Confirmed {
+        [*] --> PaymentProcessed
+        PaymentProcessed --> VehicleAssigned
+        VehicleAssigned --> InProgress : Rental starts
+    }
+`;
+
 const diagrams = [
   {
     id: "class",
@@ -210,6 +235,15 @@ const diagrams = [
     title: "Sequence Diagram — Booking Flow",
     description:
       "Traces the full booking lifecycle through the layered architecture: UI → Controller → Service → Repository → Database. Highlights overlap validation, strategy-based pricing, and payment creation.",
+  },
+  {
+    id: "activity",
+    label: "Activity",
+    icon: Activity,
+    chart: activityDiagram,
+    title: "Activity Diagram — Booking State Machine",
+    description:
+      "Models the complete booking lifecycle as a state machine. A booking transitions from Pending (with internal validation, overlap checking, and price calculation) through Confirmed (payment processed, vehicle assigned) to either Completed or Cancelled.",
   },
 ];
 
