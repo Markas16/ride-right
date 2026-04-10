@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Car, Calendar, CreditCard, LayoutDashboard, Settings, LogOut, Menu, X, Wrench, Sparkles } from "lucide-react";
+import { Car, Calendar, CreditCard, LayoutDashboard, Settings, LogOut, Menu, X, Wrench, Sparkles, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -11,6 +11,7 @@ const userNavItems = [
   { to: "/vehicles", icon: Car, label: "Vehicles" },
   { to: "/bookings", icon: Calendar, label: "My Bookings" },
   { to: "/profile", icon: Settings, label: "Profile" },
+  { to: "/system-design", icon: GitBranch, label: "System Design" },
 ];
 
 const adminNavItems = [
