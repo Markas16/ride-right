@@ -14,6 +14,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import AdminVehiclesPage from "@/pages/admin/AdminVehiclesPage";
 import AdminBookingsPage from "@/pages/admin/AdminBookingsPage";
 import AdminMaintenancePage from "@/pages/admin/AdminMaintenancePage";
+import SystemDesignPage from "@/pages/SystemDesignPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/book/:vehicleId" element={<BookingPage />} />
               <Route path="/bookings" element={<BookingsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/system-design" element={<SystemDesignPage />} />
               <Route path="/admin/vehicles" element={<AdminRoute><AdminVehiclesPage /></AdminRoute>} />
               <Route path="/admin/bookings" element={<AdminRoute><AdminBookingsPage /></AdminRoute>} />
               <Route path="/admin/maintenance" element={<AdminRoute><AdminMaintenancePage /></AdminRoute>} />
