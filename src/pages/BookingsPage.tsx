@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/animations/PageTransition";
 import { SkeletonRow } from "@/components/ui/skeleton-cards";
 import { motion } from "framer-motion";
-import { Calendar, X } from "lucide-react";
+import { Calendar, X, CheckCircle2, Clock, AlertCircle, XCircle } from "lucide-react";
 
 const statusStyles: Record<string, string> = {
   pending: "gradient-primary-soft text-primary border border-primary/20",
@@ -14,6 +14,42 @@ const statusStyles: Record<string, string> = {
   completed: "bg-success/10 text-success border border-success/20",
   cancelled: "bg-destructive/10 text-destructive border border-destructive/20",
 };
+
+const statusIcons: Record<string, any> = {
+  pending: Clock,
+  confirmed: CheckCircle2,
+  completed: CheckCircle2,
+  cancelled: XCircle,
+};
+
+const timelineSteps = ["pending", "confirmed", "completed"];
+
+function StatusTimeline({ currentStatus }: { currentStatus: string }) {
+  const isCancelled = currentStatus === "cancelled";
+  const currentIndex = timelineSteps.indexOf(currentStatus);
+
+  return (
+    <div className="flex items-center gap-1 mt-3">
+      {timelineSteps.map((step, i) => {
+        const isActive = !isCancelled && i <= currentIndex;
+        return (
+          <div key={step} className="flex items-center gap-1">
+            <div className={`h-2 w-2 rounded-full transition-colors ${isActive ? "bg-primary" : isCancelled && i === 0 ? "bg-destructive" : "bg-muted"}`} />
+            {i < timelineSteps.length - 1 && (
+              <div className={`h-px w-6 ${isActive && i < currentIndex ? "bg-primary" : "bg-muted"}`} />
+            )}
+          </div>
+        );
+      })}
+      {isCancelled && (
+        <>
+          <div className="h-px w-6 bg-destructive/30" />
+          <div className="h-2 w-2 rounded-full bg-destructive" />
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function BookingsPage() {
   const { user } = useAuth();
@@ -35,62 +71,69 @@ export default function BookingsPage() {
         ) : bookings.length === 0 ? (
           <Card className="glass-card rounded-2xl border-border/30">
             <CardContent className="p-16 text-center">
-              <Calendar className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg">No bookings yet.</p>
-              <p className="text-muted-foreground/60 text-sm mt-1">Browse vehicles to make your first rental!</p>
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+                <Calendar className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+                <p className="text-muted-foreground text-lg">No bookings yet.</p>
+                <p className="text-muted-foreground/60 text-sm mt-1">Browse vehicles to make your first rental!</p>
+              </motion.div>
             </CardContent>
           </Card>
         ) : (
           <StaggerContainer className="space-y-4">
-            {bookings.map((booking) => (
-              <StaggerItem key={booking.id}>
-                <motion.div whileHover={{ x: 4 }} transition={{ duration: 0.2 }}>
-                  <Card className="glass-card rounded-2xl border-border/30 hover:neon-border transition-all duration-300">
-                    <CardContent className="p-5">
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 hidden sm:block">
-                          {booking.vehicle && (
-                            <img src={getVehicleImage(booking.vehicle.type)} alt="" className="w-full h-full object-cover" loading="lazy" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h3 className="font-heading font-bold text-lg">{booking.vehicle?.displayName ?? "Unknown"}</h3>
-                              <p className="text-sm text-muted-foreground">{booking.formattedDateRange}</p>
-                            </div>
-                            <span className={`px-3 py-1 text-xs rounded-full font-semibold ${statusStyles[booking.status]}`}>
-                              {booking.status}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between mt-3">
-                            <div className="flex gap-4 text-sm">
-                              <span>Total: <strong className="gradient-text">{booking.formattedCost}</strong></span>
-                              {booking.payment && (
-                                <span className={`font-medium ${booking.payment.isCompleted() ? "text-success" : "text-warning"}`}>
-                                  Payment: {booking.payment.status}
-                                </span>
-                              )}
-                            </div>
-                            {booking.isCancellable() && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => cancelMutation.mutate(booking.id)}
-                                disabled={cancelMutation.isPending}
-                                className="rounded-xl gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
-                              >
-                                <X className="h-3.5 w-3.5" /> Cancel
-                              </Button>
+            {bookings.map((booking) => {
+              const StatusIcon = statusIcons[booking.status] || AlertCircle;
+              return (
+                <StaggerItem key={booking.id}>
+                  <motion.div whileHover={{ x: 4 }} transition={{ duration: 0.2 }}>
+                    <Card className="glass-card rounded-2xl border-border/30 hover:neon-border transition-all duration-300">
+                      <CardContent className="p-5">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 hidden sm:block">
+                            {booking.vehicle && (
+                              <img src={getVehicleImage(booking.vehicle.type)} alt="" className="w-full h-full object-cover" loading="lazy" />
                             )}
                           </div>
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <h3 className="font-heading font-bold text-lg">{booking.vehicle?.displayName ?? "Unknown"}</h3>
+                                <p className="text-sm text-muted-foreground">{booking.formattedDateRange}</p>
+                                <StatusTimeline currentStatus={booking.status} />
+                              </div>
+                              <span className={`px-3 py-1 text-xs rounded-full font-semibold flex items-center gap-1 ${statusStyles[booking.status]}`}>
+                                <StatusIcon className="h-3 w-3" />
+                                {booking.status}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between mt-3">
+                              <div className="flex gap-4 text-sm">
+                                <span>Total: <strong className="gradient-text">{booking.formattedCost}</strong></span>
+                                {booking.payment && (
+                                  <span className={`font-medium ${booking.payment.isCompleted() ? "text-success" : "text-warning"}`}>
+                                    Payment: {booking.payment.status}
+                                  </span>
+                                )}
+                              </div>
+                              {booking.isCancellable() && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => cancelMutation.mutate(booking.id)}
+                                  disabled={cancelMutation.isPending}
+                                  className="rounded-xl gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                                >
+                                  <X className="h-3.5 w-3.5" /> Cancel
+                                </Button>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </StaggerItem>
-            ))}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </StaggerItem>
+              );
+            })}
           </StaggerContainer>
         )}
       </div>
