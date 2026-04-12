@@ -63,15 +63,16 @@ const bikes: StaticVehicle[] = [
 
 function VehicleCard({ vehicle }: { vehicle: StaticVehicle }) {
   const navigate = useNavigate();
+  const dailyPrice = vehicle.price * 10;
 
   return (
     <StaggerItem>
       <motion.div
-        whileHover={{ y: -8, scale: 1.02 }}
+        whileHover={{ y: -8, scale: 1.03 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="group"
+        className="group h-full"
       >
-        <div className="glass-card rounded-2xl overflow-hidden border-border/30 hover:glow transition-all duration-300">
+        <div className="glass-card rounded-2xl overflow-hidden border-border/30 hover:glow transition-all duration-300 h-full flex flex-col">
           <div className="relative h-48 overflow-hidden bg-muted/20">
             <img
               src={vehicle.image}
@@ -83,7 +84,7 @@ function VehicleCard({ vehicle }: { vehicle: StaticVehicle }) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/50 via-transparent to-transparent" />
             <Badge
-              className={`absolute top-3 right-3 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${tierColors[vehicle.tier]}`}
+              className={`absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${tierColors[vehicle.tier]}`}
             >
               {vehicle.tier}
             </Badge>
@@ -93,20 +94,30 @@ function VehicleCard({ vehicle }: { vehicle: StaticVehicle }) {
             </div>
           </div>
 
-          <div className="p-5">
+          <div className="p-5 flex flex-col flex-1">
             <h3 className="font-heading font-bold text-base mb-3 line-clamp-1">{vehicle.name}</h3>
 
-            <div className="flex items-center justify-between pt-3 border-t border-border/30">
-              <p className="text-xl font-heading font-bold gradient-text">
-                ₹{vehicle.price}<span className="text-sm font-normal text-muted-foreground">/hr</span>
-              </p>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 rounded-xl bg-muted/50 px-3 py-2 text-center">
+                <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wide">Per Hour</p>
+                <p className="text-lg font-heading font-bold gradient-text">₹{vehicle.price}</p>
+              </div>
+              <div className="flex-1 rounded-xl gradient-primary-soft border border-primary/20 px-3 py-2 text-center relative">
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                  Best Value
+                </span>
+                <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wide">Per Day</p>
+                <p className="text-lg font-heading font-bold gradient-text">₹{dailyPrice}</p>
+              </div>
+            </div>
+
+            <div className="mt-auto">
               <Button
-                size="sm"
                 onClick={() => navigate(`/book/${vehicle.id}`)}
-                className="rounded-xl gradient-primary text-primary-foreground hover:opacity-90 transition-all group/btn gap-1"
+                className="w-full rounded-xl gradient-primary text-primary-foreground hover:opacity-90 transition-all group/btn gap-1.5"
               >
                 Book Now
-                <ArrowRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-0.5 transition-transform" />
               </Button>
             </div>
           </div>
@@ -134,7 +145,6 @@ export default function VehiclesPage() {
   return (
     <PageTransition>
       <div className="space-y-12">
-        {/* Page Header */}
         <div>
           <h1 className="text-3xl font-heading font-bold">
             Our <span className="gradient-text">Fleet</span>
@@ -142,7 +152,6 @@ export default function VehiclesPage() {
           <p className="text-muted-foreground mt-1">Browse and book from our premium collection</p>
         </div>
 
-        {/* Cars Section */}
         <section>
           <SectionHeader icon={Car} title="Cars" count={cars.length} />
           <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -152,7 +161,6 @@ export default function VehiclesPage() {
           </StaggerContainer>
         </section>
 
-        {/* Bikes Section */}
         <section>
           <SectionHeader icon={Bike} title="Bikes" count={bikes.length} />
           <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
